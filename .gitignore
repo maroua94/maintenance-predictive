@@ -218,3 +218,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Projet ---
+data/
+*.csv
+*.zip
+*.pkl
+*.joblib
+.env
+*.log
