@@ -49,3 +49,51 @@ services:
         done
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --list
     restart: "no"
+
+  # ---------------- HDFS (1 NameNode + 2 DataNodes) ----------------
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    hostname: namenode
+    ports:
+      - "9870:9870"            # interface web HDFS
+      - "9000:9000"            # accès HDFS (Spark)
+    environment:
+      CLUSTER_NAME: maintenance-predictive
+      CORE_CONF_fs_defaultFS: hdfs://namenode:9000
+      HDFS_CONF_dfs_replication: 2
+      HDFS_CONF_dfs_permissions_enabled: "false"
+    volumes:
+      - namenode-data:/hadoop/dfs/name
+
+  datanode1:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode1
+    hostname: datanode1
+    depends_on:
+      - namenode
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+      CORE_CONF_fs_defaultFS: hdfs://namenode:9000
+      HDFS_CONF_dfs_replication: 2
+    volumes:
+      - datanode1-data:/hadoop/dfs/data
+
+  datanode2:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode2
+    hostname: datanode2
+    depends_on:
+      - namenode
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+      CORE_CONF_fs_defaultFS: hdfs://namenode:9000
+      HDFS_CONF_dfs_replication: 2
+    volumes:
+      - datanode2-data:/hadoop/dfs/data
+
+# ---------------- Volumes (les données survivent à un redémarrage) ----------------
+volumes:
+  namenode-data:
+  datanode1-data:
+  datanode2-data:
