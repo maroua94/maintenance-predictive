@@ -57,7 +57,7 @@ Comme ça, Spark peut tout lire de la même façon, et chaque partie sait exacte
 
 ## 3. Règles à respecter
 
-1. **Noms en `snake_case`**, avec l'unité dans le nom quand il y en a une : `cpu_pct`, `temperature_c`, `throughput_mbps`.
+1. **Noms en `snake_case`**, avec l'unité dans le nom quand il y en a une : `cpu_pct`, `temperature_c`, `in_mbps`.
 2. **Toujours en UTC**, au format ISO 8601 : `2026-11-09T10:15:00Z`.
 3. **Valeur manquante = `null`**. On ne supprime jamais la clé, pour que Spark garde le même schéma.
 4. **Nombres en nombres**, pas en texte : `45.2` et non `"45.2"`.
@@ -148,8 +148,9 @@ Comme ça, Spark peut tout lire de la même façon, et chaque partie sait exacte
     "cpu_pct": 55.1,
     "mem_pct": 62.3,
     "temperature_c": 48.0,
-    "throughput_mbps": 210.5,
-    "crc_errors": 2,
+    "in_mbps": 210.5,
+    "out_mbps": 188.2,
+    "if_errors": 2,
     "packet_loss_pct": 0.3
   },
   "meta": {
@@ -160,6 +161,8 @@ Comme ça, Spark peut tout lire de la même façon, et chaque partie sait exacte
   "label": null
 }
 ```
+
+> `in_mbps`, `out_mbps` et `if_errors` ont les mêmes noms qu'en SNMP (règle 7), pour que M3 traite les deux sources ensemble.
 
 > `meta.scenario` vaut `normal`, `surchauffe` ou `fuite_memoire`. Ce champ sert uniquement à évaluer M3 (taux de pannes provoquées détectées). **Le modèle ne doit jamais l'utiliser comme entrée.**
 
