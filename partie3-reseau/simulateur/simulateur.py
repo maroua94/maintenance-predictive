@@ -4,11 +4,16 @@ Simulateur d'équipements réseau (partie 3).
 Génère des mesures pour un parc d'équipements au format JSON commun
 (voir docs/format_json.md). Une partie des équipements développe une panne
 progressive : surchauffe ou fuite mémoire.
+
+Les messages sont envoyés dans Kafka (--kafka), écrits dans un fichier
+(--sortie) ou affichés dans la console.
 """
 
 import argparse
+import itertools
 import json
 import random
+import sys
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -19,6 +24,9 @@ TAUX_PANNE = 0.10
 # Seuils à partir desquels une dérive commence à dégrader les autres métriques
 SEUIL_TEMPERATURE = 65.0
 SEUIL_MEMOIRE = 85.0
+
+# En mode continu, les pannes démarrent dans la première heure (360 cycles de 10 s)
+CYCLES_REFERENCE_CONTINU = 360
 
 
 def borner(valeur, mini, maxi):
@@ -112,42 +120,89 @@ class Equipement:
 def lire_arguments():
     parser = argparse.ArgumentParser(description="Simulateur d'équipements réseau")
     parser.add_argument("--equipements", type=int, default=200, help="nombre d'équipements")
-    parser.add_argument("--cycles", type=int, default=10, help="nombre de relevés")
+    parser.add_argument("--cycles", type=int, default=10, help="nombre de relevés (0 : en continu)")
     parser.add_argument("--intervalle", type=float, default=10,
                         help="secondes entre deux relevés (0 : génération immédiate)")
-    parser.add_argument("--sortie", help="fichier JSON Lines de sortie (sinon affichage)")
+    parser.add_argument("--sortie", help="fichier JSON Lines de sortie")
+    parser.add_argument("--kafka", metavar="SERVEUR", help="adresse du broker Kafka, ex. localhost:9092")
+    parser.add_argument("--topic", default="network-metrics", help="topic Kafka")
     parser.add_argument("--graine", type=int, default=42, help="graine aléatoire")
     return parser.parse_args()
+
+
+def creer_producteur(serveur):
+    from kafka import KafkaProducer
+    from kafka.errors import NoBrokersAvailable
+
+    try:
+        return KafkaProducer(
+            bootstrap_servers=serveur,
+            key_serializer=lambda k: k.encode("utf-8"),
+            value_serializer=lambda v: json.dumps(v, ensure_ascii=False).encode("utf-8"),
+            acks="all",
+            linger_ms=50,
+        )
+    except NoBrokersAvailable:
+        sys.exit(f"Kafka injoignable sur {serveur} : le conteneur kafka est-il démarré ?")
 
 
 def main():
     args = lire_arguments()
     random.seed(args.graine)
 
-    parc = [Equipement(i, args.cycles) for i in range(1, args.equipements + 1)]
+    continu = args.cycles == 0
+    reference = CYCLES_REFERENCE_CONTINU if continu else args.cycles
+    parc = [Equipement(i, reference) for i in range(1, args.equipements + 1)]
+
     pannes = [e for e in parc if e.scenario != "normal"]
     print(f"{len(parc)} équipements, {len(pannes)} pannes programmées")
     for e in pannes:
         print(f"  {e.device_id:<8} {e.device_type:<7} {e.scenario:<14} cycle {e.debut_panne}")
 
+    producteur = creer_producteur(args.kafka) if args.kafka else None
+    fichier = open(args.sortie, "w", encoding="utf-8") if args.sortie else None
+    console = not producteur and not fichier
+
     debut = datetime.now(timezone.utc).replace(microsecond=0)
     pas = args.intervalle if args.intervalle > 0 else 10
-    fichier = open(args.sortie, "w", encoding="utf-8") if args.sortie else None
+    cycles = itertools.count() if continu else range(args.cycles)
+    total = 0
 
     try:
-        for cycle in range(args.cycles):
-            horodatage = (debut + timedelta(seconds=cycle * pas)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        for cycle in cycles:
+            # En temps réel on prend l'heure actuelle, sinon une horloge simulée
+            if args.intervalle > 0:
+                instant = datetime.now(timezone.utc)
+            else:
+                instant = debut + timedelta(seconds=cycle * pas)
+            horodatage = instant.strftime("%Y-%m-%dT%H:%M:%SZ")
+
             for e in parc:
-                ligne = json.dumps(e.mesurer(cycle, horodatage), ensure_ascii=False)
-                print(ligne, file=fichier)  # file=None : affichage console
-            if args.intervalle > 0 and cycle < args.cycles - 1:
+                message = e.mesurer(cycle, horodatage)
+                if producteur:
+                    # clé = device_id : les messages d'un équipement restent dans la même partition
+                    producteur.send(args.topic, key=e.device_id, value=message)
+                if fichier:
+                    fichier.write(json.dumps(message, ensure_ascii=False) + "\n")
+                if console:
+                    print(json.dumps(message, ensure_ascii=False))
+            total += len(parc)
+
+            if producteur:
+                print(f"cycle {cycle} : {total} messages envoyés dans {args.topic}")
+            if args.intervalle > 0 and (continu or cycle < args.cycles - 1):
                 time.sleep(args.intervalle)
+    except KeyboardInterrupt:
+        print("\narrêt demandé")
     finally:
+        if producteur:
+            producteur.flush()
+            producteur.close()
         if fichier:
             fichier.close()
 
-    if args.sortie:
-        print(f"{args.cycles * len(parc)} messages écrits dans {args.sortie}")
+    if not console:
+        print(f"{total} messages produits")
 
 
 if __name__ == "__main__":
