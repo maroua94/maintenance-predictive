@@ -65,7 +65,7 @@ services:
     environment:
       KAFKA_BOOTSTRAP: kafka:29092
       KAFKA_TOPIC: network-syslog
-      ROUTEURS: ""
+      ROUTEURS: "192.168.10.1=R1,192.168.10.2=R2,192.168.10.3=R3"
     restart: unless-stopped
 
   # ---------------- HDFS (1 NameNode + 2 DataNodes) ----------------
