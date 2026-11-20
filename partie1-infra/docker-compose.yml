@@ -53,6 +53,21 @@ services:
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --list
     restart: "no"
 
+  # ---------------- COLLECTEUR SYSLOG (routeurs -> Kafka) ----------------
+  syslog-collector:
+    build: ./syslog
+    container_name: syslog-collector
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "514:514/udp"
+    environment:
+      KAFKA_BOOTSTRAP: kafka:29092
+      KAFKA_TOPIC: network-syslog
+      ROUTEURS: ""
+    restart: unless-stopped
+
   # ---------------- HDFS (1 NameNode + 2 DataNodes) ----------------
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
@@ -125,7 +140,7 @@ services:
 
 # ---------------- Volumes (les données survivent à un redémarrage) ----------------
 volumes:
+  kafka-data:
   namenode-data:
   datanode1-data:
   datanode2-data:
-  kafka-data:
