@@ -153,3 +153,22 @@ Résultat attendu : un tableau contenant le texte du fichier.
 - **S2** : passage sur 3 nœuds, persistance Kafka, CI/CD GitHub Actions, logs syslog vers Kafka
 - **S3** : squelette du job Spark Streaming, modèle M4 (analyse des logs)
 - **S4** : intégration de tous les modèles dans Spark Streaming
+
+---
+
+## Collecteur syslog
+
+Le service `syslog-collector` reçoit les logs des routeurs (UDP 514), les convertit au format JSON commun et les publie dans le topic `network-syslog`.
+
+| Variable | Rôle | Valeur par défaut |
+|---|---|---|
+| `KAFKA_BOOTSTRAP` | Adresse de Kafka | `kafka:29092` |
+| `KAFKA_TOPIC` | Topic de destination | `network-syslog` |
+| `ROUTEURS` | Correspondance IP → nom, ex. `192.168.10.1=R1,192.168.10.2=R2` | vide (l'IP est utilisée) |
+
+Test sans routeur :
+
+```bash
+docker exec syslog-collector python -c "import socket; s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.sendto(b'<187>%LINK-3-UPDOWN: Interface FastEthernet0/1, changed state to down', ('127.0.0.1', 514))"
+docker exec kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:29092 --topic network-syslog --from-beginning --timeout-ms 30000
+```
