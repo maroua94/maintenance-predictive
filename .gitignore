@@ -228,3 +228,4 @@ data/
 .env
 *.log
 *.parquet
+*.jsonl
