@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  compose:
+    name: Vérification docker-compose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Valider la syntaxe du cluster
+        run: docker compose -f partie1-infra/docker-compose.yml config --quiet
+
+  python:
+    name: Vérification du code Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Installer flake8
+        run: pip install flake8
+      - name: Erreurs bloquantes (syntaxe, noms non définis)
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+  kafka:
+    name: Test de démarrage Kafka
+    runs-on: ubuntu-latest
+    needs: compose
+    defaults:
+      run:
+        working-directory: partie1-infra
+    steps:
+      - uses: actions/checkout@v4
+      - name: Démarrer Kafka
+        run: docker compose up -d kafka kafka-init
+      - name: Vérifier les 3 topics
+        run: |
+          for i in $(seq 1 30); do
+            topics=$(docker exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --list 2>/dev/null || true)
+            if echo "$topics" | grep -q servers-smart \
+               && echo "$topics" | grep -q network-metrics \
+               && echo "$topics" | grep -q network-syslog; then
+              echo "$topics"
+              exit 0
+            fi
+            sleep 5
+          done
+          docker compose logs kafka kafka-init
+          exit 1
+      - name: Arrêter le cluster
+        if: always()
+        run: docker compose down -v
