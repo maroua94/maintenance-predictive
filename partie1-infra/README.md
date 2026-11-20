@@ -172,3 +172,27 @@ Test sans routeur :
 docker exec syslog-collector python -c "import socket; s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.sendto(b'<187>%LINK-3-UPDOWN: Interface FastEthernet0/1, changed state to down', ('127.0.0.1', 514))"
 docker exec kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:29092 --topic network-syslog --from-beginning --timeout-ms 30000
 ```
+
+---
+
+## Organisation en 3 nœuds
+
+Le cluster suit une architecture **1 master + 2 workers**, comme prévu dans le cahier des charges :
+
+~~~text
+                    ┌──────────────────────────┐
+                    │          MASTER          │
+                    │  kafka · namenode        │
+                    │  spark-master            │
+                    └────────────┬─────────────┘
+                 ┌───────────────┴───────────────┐
+    ┌────────────┴────────────┐     ┌────────────┴────────────┐
+    │        WORKER 1         │     │        WORKER 2         │
+    │  datanode1              │     │  datanode2              │
+    │  spark-worker1 (2c/2Go) │     │  spark-worker2 (2c/2Go) │
+    └─────────────────────────┘     └─────────────────────────┘
+~~~
+
+- Le **master** coordonne : il reçoit les données (Kafka), sait où sont les blocs (NameNode) et distribue les calculs (Spark Master).
+- Les **workers** stockent les blocs HDFS (réplication 2) et exécutent les tâches Spark en parallèle.
+- **Scalabilité :** ajouter un worker revient à dupliquer un bloc `datanodeN` + `spark-workerN` dans le `docker-compose.yml`, sans modifier le code.
