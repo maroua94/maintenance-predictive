@@ -1,1 +1,2 @@
 kafka-python==2.0.6
+pysnmp==7.1.16
