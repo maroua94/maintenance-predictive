@@ -1,0 +1,5 @@
+# Sorties des tests locaux (data/, *.csv, *.parquet et .env sont déjà ignorés à la racine)
+out/
+spark-warehouse/
+metastore_db/
+derby.log

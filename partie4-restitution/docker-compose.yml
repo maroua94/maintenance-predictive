@@ -1,0 +1,65 @@
+# Partie 4 — InfluxDB + Grafana (SCRUM-18)
+# Versions figées volontairement (pas de "latest"), comme le cluster de la partie 1.
+#
+#   cd partie4-restitution
+#   docker compose up -d                                   # seul, en local (SCRUM-18)
+#   docker compose -f docker-compose.yml -f docker-compose.cluster.yml up -d   # avec le cluster (SCRUM-38)
+#
+# Identifiants : valeurs par défaut ci-dessous, à remplacer dans un fichier .env (voir .env.example)
+
+name: restitution
+
+services:
+
+  # ---------------- INFLUXDB (base de séries temporelles) ----------------
+  influxdb:
+    # InfluxDB 2 : depuis mai 2026, l'étiquette "latest" pointe vers InfluxDB 3 (API différente)
+    image: influxdb:2.7.12
+    container_name: influxdb
+    hostname: influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_USER:-admin}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD:-maintenance2026}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG:-ensa}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET:-maintenance}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_TOKEN:-maintenance-token-dev}
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # ---------------- GRAFANA (dashboard) ----------------
+  grafana:
+    image: grafana/grafana:13.3.0
+    container_name: grafana
+    hostname: grafana
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # Lues par grafana/provisioning/datasources/influxdb.yml
+      INFLUXDB_ORG: ${INFLUXDB_ORG:-ensa}
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET:-maintenance}
+      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN:-maintenance-token-dev}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+# ---------------- Volumes (données et dashboards conservés au redémarrage) ----------------
+volumes:
+  influxdb-data:
+  influxdb-config:
+  grafana-data:
