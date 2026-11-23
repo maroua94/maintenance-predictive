@@ -1,0 +1,726 @@
+{
+  "id": null,
+  "uid": "maintenance-predictive",
+  "title": "Maintenance prédictive — Disques (SMART)",
+  "tags": [
+    "maintenance",
+    "smart",
+    "backblaze"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "",
+  "time": {
+    "from": "now-2y",
+    "to": "now"
+  },
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "bucket",
+        "label": "Bucket InfluxDB",
+        "type": "textbox",
+        "query": "maintenance",
+        "current": {
+          "text": "maintenance",
+          "value": "maintenance"
+        },
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Disques suivis",
+      "description": "Nombre de disques distincts dans les données SMART",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-maintenance"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-maintenance"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"kpi\" and r._field == \"nb_disques\")\n  |> last()"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Pannes sur la période",
+      "description": "",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-maintenance"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-maintenance"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"kpi\" and r._field == \"nb_pannes\")\n  |> last()"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "AFR global",
+      "description": "Taux de panne annualisé = pannes / (jours-disque / 365) × 100",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-maintenance"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-maintenance"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"kpi\" and r._field == \"afr_pct\")\n  |> last()"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Âge moyen à la panne",
+      "description": "Moyenne de smart_9 (heures de fonctionnement) le jour de la panne",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-maintenance"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-maintenance"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"kpi\" and r._field == \"age_moyen_panne_ans\")\n  |> last()"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ans",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Pannes par jour",
+      "description": "",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-maintenance"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 16,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-maintenance"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"pannes_jour\" and r._field == \"nb_pannes\")\n  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 2,
+            "fillOpacity": 80,
+            "showPoints": "never",
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Disques suivis par jour",
+      "description": "",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-maintenance"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 4,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-maintenance"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"pannes_jour\" and r._field == \"nb_disques\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "never",
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "barchart",
+      "title": "Disques avec compteur d'erreurs > 0 au dernier relevé",
+      "description": "Part des disques dont le compteur SMART est non nul à leur dernier relevé",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-maintenance"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 10,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-maintenance"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"smart_non_nul\" and r._field == \"valeur\")\n  |> last()\n  |> group()\n  |> pivot(rowKey: [\"attribut\"], columnKey: [\"groupe\"], valueColumn: \"_value\")\n  |> keep(columns: [\"attribut\", \"sain\", \"panne\"])\n  |> sort(columns: [\"attribut\"])"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "sain": "Disques sains",
+              "panne": "Disques tombés en panne"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "xField": "attribut",
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "Taux de panne annualisé par modèle",
+      "description": "",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-maintenance"
+      },
+      "gridPos": {
+        "x": 10,
+        "y": 12,
+        "w": 14,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-maintenance"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"afr_modele\")\n  |> last()\n  |> group()\n  |> pivot(rowKey: [\"modele\", \"fabricant\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> keep(columns: [\"modele\", \"fabricant\", \"nb_disques\", \"jours_disque\", \"nb_pannes\", \"afr_pct\"])\n  |> sort(columns: [\"afr_pct\"], desc: true)\n  |> limit(n: 15)"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "modele": "Modèle",
+              "fabricant": "Fabricant",
+              "nb_disques": "Disques",
+              "jours_disque": "Jours-disque",
+              "nb_pannes": "Pannes",
+              "afr_pct": "AFR (%)"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "AFR (%)"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 2
+                    },
+                    {
+                      "color": "red",
+                      "value": 5
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "barchart",
+      "title": "Attributs SMART critiques avant la panne (moyenne par jour restant)",
+      "description": "Pour les disques tombés en panne : valeur moyenne de chaque attribut SMART N jours avant la panne (calcul RUL, SCRUM-40)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-maintenance"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 16,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-maintenance"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"smart_avant_panne\" and r._field != \"nb_obs\")\n  |> last()\n  |> group()\n  |> pivot(rowKey: [\"rul_jours\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with j: int(v: r.rul_jours)}))\n  |> sort(columns: [\"j\"], desc: true)\n  |> map(fn: (r) => ({r with rul_jours: \"J-\" + r.rul_jours}))\n  |> drop(fn: (column) => column == \"j\")"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "smart_5_raw": "5 · secteurs réalloués",
+              "smart_187_raw": "187 · erreurs non corrigibles",
+              "smart_197_raw": "197 · secteurs en attente",
+              "smart_198_raw": "198 · secteurs non corrigibles"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "vertical",
+        "xField": "rul_jours",
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "table",
+      "title": "Disques sains vs disques tombés en panne",
+      "description": "Moyennes sur toutes les observations ; écart = en panne ÷ sains",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-maintenance"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 21,
+        "w": 8,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-maintenance"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"smart_reference\" and r._field == \"valeur\")\n  |> last()\n  |> group()\n  |> pivot(rowKey: [\"attribut\"], columnKey: [\"groupe\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with ratio: if exists r.sain and exists r.panne and r.sain > 0.0 then r.panne / r.sain else 0.0}))\n  |> keep(columns: [\"attribut\", \"sain\", \"panne\", \"ratio\"])\n  |> sort(columns: [\"attribut\"])"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "attribut": "Attribut SMART",
+              "sain": "Sains (moy.)",
+              "panne": "En panne (moy.)",
+              "ratio": "Écart"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Écart"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "unit",
+                "value": "suffix: ×"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "text",
+      "title": "Lecture des indicateurs",
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 24,
+        "h": 6
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**AFR** (taux de panne annualisé) = pannes ÷ (jours-disque ÷ 365) × 100 — permet de comparer des modèles suivis pendant des durées différentes.\n\n**RUL** (jours restants avant la panne) : calculé pour chaque disque tombé en panne (J-0 = jour de la panne). Le graphique SMART montre comment les attributs se dégradent à l'approche de la panne : c'est la base du futur modèle de prédiction.\n\n**Source** : SMART Backblaze → Kafka (`servers-smart`) → HDFS → Spark (SCRUM-39/40) → InfluxDB.\n\n_Les panneaux « disques à risque » et « réseau (SNMP / syslog) » de la maquette seront ajoutés quand le modèle et les mesures réseau seront dans InfluxDB._"
+      }
+    }
+  ]
+}

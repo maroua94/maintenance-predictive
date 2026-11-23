@@ -1,0 +1,20 @@
+# SCRUM-38 — Intégrer InfluxDB et Grafana dans le cluster
+#
+# S'ajoute à docker-compose.yml : branche les deux conteneurs sur le réseau du cluster
+# de la partie 1 (projet compose "maintenance-predictive" -> réseau "maintenance-predictive_default").
+# Les jobs Spark (spark-master, spark-worker1/2) écrivent alors dans http://influxdb:8086.
+#
+# Le cluster doit tourner avant :  cd partie1-infra && docker compose up -d
+#   cd partie4-restitution
+#   docker compose -f docker-compose.yml -f docker-compose.cluster.yml up -d
+
+services:
+  influxdb:
+    networks: [cluster]
+  grafana:
+    networks: [cluster]
+
+networks:
+  cluster:
+    external: true
+    name: maintenance-predictive_default

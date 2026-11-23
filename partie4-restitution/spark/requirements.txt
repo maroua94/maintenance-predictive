@@ -1,0 +1,6 @@
+# Rien à installer dans le cluster : les jobs n'utilisent que PySpark (fourni par apache/spark:3.5.1)
+# et la bibliothèque standard Python. Pour lancer les tests et l'outil de données de test en local :
+pyspark==3.5.1
+pandas==2.2.3
+numpy
+pytest
