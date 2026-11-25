@@ -196,3 +196,24 @@ Le cluster suit une architecture **1 master + 2 workers**, comme prévu dans le 
 - Le **master** coordonne : il reçoit les données (Kafka), sait où sont les blocs (NameNode) et distribue les calculs (Spark Master).
 - Les **workers** stockent les blocs HDFS (réplication 2) et exécutent les tâches Spark en parallèle.
 - **Scalabilité :** ajouter un worker revient à dupliquer un bloc `datanodeN` + `spark-workerN` dans le `docker-compose.yml`, sans modifier le code.
+
+## Job Spark Streaming (SCRUM-47)
+
+`streaming/pipeline_streaming.py` lit en continu les 3 topics Kafka, décode le format JSON commun et écrit les messages dans HDFS (Parquet, partitionné par `type` et par jour).
+
+```bash
+docker exec -it spark-master /opt/spark/bin/spark-submit \
+  --master spark://spark-master:7077 \
+  --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 \
+  --conf spark.jars.ivy=/tmp/.ivy2 \
+  /opt/streaming/pipeline_streaming.py --sortie hdfs
+```
+
+| Option | Valeur par défaut | Rôle |
+|---|---|---|
+| `--sortie` | `console` | `console` pour tester, `hdfs` pour stocker |
+| `--depart` | `latest` | `earliest` pour relire l'historique des topics |
+| `--hdfs` | `/data/stream/messages` | dossier Parquet de sortie |
+| `--checkpoint` | `/checkpoints/streaming` | position de reprise en cas de redémarrage |
+
+Vérification : `docker exec namenode hdfs dfs -ls -R /data/stream/messages`

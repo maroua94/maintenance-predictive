@@ -100,6 +100,7 @@ def main():
         .appName("pipeline-streaming")
         .config("spark.sql.session.timeZone", "UTC")
         .config("spark.sql.shuffle.partitions", "6")
+        .config("spark.hadoop.dfs.replication", "2")
         .getOrCreate()
     )
     spark.sparkContext.setLogLevel("WARN")
