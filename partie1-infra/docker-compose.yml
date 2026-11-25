@@ -121,6 +121,8 @@ services:
       - "7077:7077"
     environment:
       SPARK_MASTER_HOST: spark-master
+    volumes:
+      - ./streaming:/opt/streaming
 
   spark-worker1:
     image: apache/spark:3.5.1
