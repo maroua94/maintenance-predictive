@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 METRIQUES = [
     "cpu_pct",
@@ -42,11 +43,25 @@ def charger_jsonl(fichier):
     df = df.rename(columns={"timestamp": "event_time"})
     return _mettre_en_forme(df)
 
+
+def decouper(df, part_test=0.2, graine=42):
+    """Répartit les équipements entre entraînement et test, sans qu'un équipement soit dans les deux."""
+    # Stratification : la même proportion d'équipements en panne dans les deux jeux
+    en_panne = df.groupby("device_id")["scenario"].apply(lambda s: (s != "normal").any())
+    ids_train, ids_test = train_test_split(
+        en_panne.index, test_size=part_test, stratify=en_panne, random_state=graine
+    )
+    entrainement = df[df["device_id"].isin(ids_train)].reset_index(drop=True)
+    test = df[df["device_id"].isin(ids_test)].reset_index(drop=True)
+    return entrainement, test
+
+
 def separer(df):
     """Sépare les entrées du modèle et la vérité terrain (1 = en panne)."""
     X = df[METRIQUES]
     y = (df["scenario"] != "normal").astype(int)
     return X, y
+
 
 def resumer(nom, df):
     print(f"---- {nom} ----")
@@ -63,19 +78,20 @@ def resumer(nom, df):
 
 
 def lire_arguments():
-    parser = argparse.ArgumentParser(description="Aperçu des données d'entraînement et de test de M3")
+    parser = argparse.ArgumentParser(description="Aperçu des jeux d'entraînement et de test de M3")
     parser.add_argument("--clean", default=str(Path.home() / "donnees-m3" / "clean"),
                         help="copie locale de /data/network/clean")
-    parser.add_argument("--date", default="2026-11-26", help="journée d'entraînement")
-    parser.add_argument("--test", default=str(Path.home() / "donnees-m3" / "test_graine7.jsonl"),
-                        help="fichier de test (graine 7)")
+    parser.add_argument("--date", default="2026-11-26", help="journée à utiliser")
     return parser.parse_args()
 
 
 def main():
     args = lire_arguments()
-    resumer("entraînement (graine 42)", charger_parquet(args.clean, args.date))
-    resumer("test (graine 7)", charger_jsonl(args.test))
+    entrainement, test = decouper(charger_parquet(args.clean, args.date))
+    resumer("entraînement (80 %)", entrainement)
+    resumer("test (20 %)", test)
+    communs = set(entrainement["device_id"]) & set(test["device_id"])
+    print(f"équipements présents dans les deux jeux : {len(communs)}")
 
 
 if __name__ == "__main__":
