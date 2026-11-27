@@ -16,12 +16,9 @@ URL="https://f001.backblazeb2.com/file/Backblaze-Hard-Drive-Data/${ZIP}"
 mkdir -p "$DATA_DIR"
 cd "$DATA_DIR"
 
-if [ ! -f "$ZIP" ]; then
-  echo ">> Téléchargement de $ZIP ..."
-  wget -c "$URL"
-else
-  echo ">> $ZIP déjà présent, téléchargement ignoré."
-fi
+# -c reprend un téléchargement interrompu, et ne refait rien si le fichier est complet
+echo ">> Téléchargement de $ZIP ..."
+wget -c --tries=20 --waitretry=5 --read-timeout=30 "$URL"
 
 echo ">> Extraction des fichiers de ${YEAR}-${MONTH} ..."
 unzip -n -q "$ZIP" "*${YEAR}-${MONTH}-*.csv" -x "__MACOSX/*" -d "$DATA_DIR"
